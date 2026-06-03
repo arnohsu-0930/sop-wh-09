@@ -165,6 +165,7 @@
             <div style="margin-top:6px; font-size:0.3em; color:#666; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px;">
               提交數：<span id="wc-total" style="color:var(--accent); font-weight:700;">0</span> |
               獨特詞：<span id="wc-unique" style="color:var(--accent2); font-weight:700;">0</span>
+              <button id="wc-clear-btn" style="display:none; margin-left:8px; padding:2px 6px; background:#ff4757; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">🗑️ 清除</button>
             </div>
           </div>
         </div>
@@ -394,6 +395,7 @@
       </div>
       <div style="font-size:0.38em; color:#666; text-align:center; margin-top:15px;">
         目前已參與投票：<span id="poll-total" style="color:var(--accent2); font-weight:bold;">0</span> 人
+        <button id="poll-clear-btn" style="display:none; margin-left:8px; padding:2px 6px; background:#ff4757; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">🗑️ 重設</button>
       </div>
     </section>
 
@@ -481,7 +483,8 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
   import {
     getFirestore, collection, addDoc, onSnapshot,
-    serverTimestamp, query, orderBy, doc, setDoc
+    serverTimestamp, query, orderBy, doc, setDoc,
+    getDocs, writeBatch
   } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 
   // 您的專屬 Firebase 專案設定
@@ -637,6 +640,65 @@
       setTimeout(drawWordCloud, 200);
     }
   });
+
+  // ==================== [講者控制項：清除/重設功能] ====================
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPresenter = urlParams.has('presenter') || urlParams.has('admin');
+  if (isPresenter) {
+    const wcClearBtn = document.getElementById('wc-clear-btn');
+    const pollClearBtn = document.getElementById('poll-clear-btn');
+    if (wcClearBtn) wcClearBtn.style.display = 'inline-block';
+    if (pollClearBtn) pollClearBtn.style.display = 'inline-block';
+  }
+
+  // 清除文字雲
+  window.clearWordcloud = async function() {
+    if (!confirm('確定要清空全體聽眾送出的文字雲數據嗎？此動作無法復原。')) return;
+    const btn = document.getElementById('wc-clear-btn');
+    btn.disabled = true;
+    try {
+      const snap = await getDocs(wordsRef);
+      const batch = writeBatch(fdb);
+      snap.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      alert('文字雲已成功清空！');
+    } catch (e) {
+      console.error(e);
+      alert('清除失敗，請確認資料庫權限。');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // 重設投票
+  window.clearPoll = async function() {
+    if (!confirm('確定要清空並重設所有聽眾的投票數據嗎？此動作無法復原。')) return;
+    const btn = document.getElementById('poll-clear-btn');
+    btn.disabled = true;
+    try {
+      await setDoc(pollRef, { votes: {}, updated_at: serverTimestamp() });
+      myVote = null;
+      OPTIONS.forEach(opt => {
+        const check = document.getElementById(`poll-check-${opt.id}`);
+        if (check) {
+          check.textContent = '';
+          check.style.background = 'transparent';
+          check.style.borderColor = 'rgba(255,255,255,0.3)';
+        }
+      });
+      alert('投票已成功重設！');
+    } catch (e) {
+      console.error(e);
+      alert('重設失敗，請確認資料庫權限。');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  document.getElementById('wc-clear-btn')?.addEventListener('click', window.clearWordcloud);
+  document.getElementById('poll-clear-btn')?.addEventListener('click', window.clearPoll);
 </script>
 </body>
 </html>
