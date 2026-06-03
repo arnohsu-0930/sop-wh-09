@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOP-WH-09 倉庫報廢及銷毀程序</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/night.css" />
+  <!-- Wordcloud 函式庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+  
+  <style>
+    /* === 全域與變數 === */
+    :root {
+      --accent:  #e8643a;   /* 橘紅 */
+      --accent2: #4fc3f7;   /* 青藍 */
+      --success: #81c784;   /* 綠 */
+      --warn:    #ffb74d;   /* 橙黃 */
+      --dark-bg: #0d1117;
+    }
+
+    .reveal {
+      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .reveal h1 { font-size: 2.0em; text-shadow: 0 0 20px rgba(232,100,58,0.3); }
+    .reveal h2 { font-size: 1.4em; color: var(--accent2); margin-bottom: 0.6em; text-shadow: 0 0 15px rgba(79,195,247,0.3); }
+    .reveal h3 { font-size: 1.0em; color: #fff; }
+    .reveal .progress { color: var(--accent); }
+    .reveal p { font-size: 0.55em; color: #ccc; line-height: 1.6; }
+    .reveal ul { font-size: 0.48em; color: #bbb; line-height: 1.7; }
+    .reveal ol { font-size: 0.48em; color: #bbb; line-height: 1.7; }
+
+    /* === 封面 === */
+    .title-slide { text-align: center; }
+    .title-slide .tag {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 0.5em;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.8em;
+      font-weight: 600;
+      box-shadow: 0 0 12px rgba(232,100,58,0.5);
+    }
+    .title-slide .subtitle { font-size: 0.7em; color: #aaa; margin-top: 0.4em; letter-spacing: 0.02em; }
+    .title-slide .author { margin-top: 2.2em; font-size: 0.45em; color: #888; }
+
+    /* === 網格與卡片 === */
+    .adv-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 0.6em; }
+    .adv-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 0.5em; }
+    .adv-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 0.5em; }
+    
+    .adv-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top: 4px solid var(--accent2);
+      border-radius: 8px;
+      padding: 18px 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .adv-card:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(79,195,247,0.4);
+      transform: translateY(-5px);
+    }
+    .adv-card .adv-icon { margin-bottom: 12px; }
+    .adv-card .adv-icon img {
+      width: 52px; height: 52px; object-fit: contain;
+      display: block; margin: 0 auto;
+      filter: drop-shadow(0 0 8px rgba(79,195,247,0.5));
+    }
+    .adv-card .adv-title { font-size: 0.55em; font-weight: 700; color: var(--accent2); margin-bottom: 8px; }
+    .adv-card .adv-desc { font-size: 0.4em; color: #b0bec5; text-align: left; line-height: 1.6; }
+
+    /* === 時間軸 (SOP 流程) === */
+    .timeline { position: relative; padding-left: 45px; margin-top: 0.5em; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto; }
+    .timeline::before {
+      content: ''; position: absolute; left: 18px; top: 10px; bottom: 10px;
+      width: 2px; background: rgba(79,195,247,0.3);
+    }
+    .timeline-item { position: relative; margin-bottom: 22px; font-size: 0.44em; }
+    .timeline-item::before {
+      content: ''; position: absolute; left: -32px; top: 4px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent); border: 2px solid #0d1117;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .timeline-item .ti-step { color: var(--accent2); font-weight: 700; font-size: 1.1em; margin-bottom: 2px; }
+    .timeline-item .ti-text { color: #cfd8dc; }
+
+    /* === 醒目說明與 VS 對比 === */
+    .attention-box {
+      background: rgba(232,100,58,0.08);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-top: 0.8em;
+      text-align: left;
+    }
+    .attention-box .title { font-size: 0.52em; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .attention-box .desc { font-size: 0.44em; color: #eceff1; margin: 0; line-height: 1.6; }
+
+    /* === LIVE 動畫 === */
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- 1. 封面 -->
+    <section data-background-image="images/bg_cover.png"
+             data-background-opacity="0.35"
+             data-background-size="cover">
+      <div class="title-slide">
+        <div class="tag">PHARMOSA BIOPHARM · SOP-WH-09</div>
+        <h1>倉庫報廢及銷毀程序</h1>
+        <h2 style="color:var(--accent2); margin-top:0.1em; font-size:1.1em; font-weight: 600;">
+          Warehouse Scrap & Destruction Procedure
+        </h2>
+        <p class="subtitle" style="color: #888; font-size: 0.5em; margin-top: 1.5em;">
+          引導倉庫管制品項的行政申報、實體移置、帳卡核銷與實體破壞流程
+        </p>
+        <p class="author">
+          制定：倉儲管理 許家修 | 版次：01 
+        </p>
+      </div>
+    </section>
+
+    <!-- 2. 課前互動 (Wordcloud) -->
+    <section id="slide-wordcloud">
+      <h2 style="font-size:1.2em; margin-bottom:0.4em;">互動思考：哪些狀況下的倉庫物品需要進行報廢銷毀？</h2>
+      <div style="display:grid; grid-template-columns:260px 1fr; gap:16px; height:460px;">
+        
+        <!-- 左欄：輸入 + 排行 -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="background:rgba(255,255,255,0.06); border-radius:10px; padding:12px; text-align: left;">
+            <div style="font-size:0.38em; color:var(--accent2); font-weight:700; margin-bottom:6px;">輸入答案 (例如：過期、變質、拒用)</div>
+            <input id="wc-input" type="text" placeholder="請輸入關鍵詞…" maxlength="20"
+              style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(79,195,247,0.3);
+                     background:rgba(255,255,255,0.08); color:#fff; font-size:13px;
+                     box-sizing:border-box; font-family:inherit; outline:none;" />
+            <button id="wc-btn"
+              style="width:100%; margin-top:8px; padding:9px; background:var(--accent2); color:#0d1117;
+                     border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;">
+              送出 ↵
+            </button>
+          </div>
+          <div style="background:rgba(255,255,255,0.06); border-radius:10px; padding:12px; flex:1; overflow:hidden; display:flex; flex-direction:column; text-align: left;">
+            <div style="font-size:0.38em; color:var(--accent2); font-weight:700; margin-bottom:6px;">
+              即時統計 
+              <span style="display:inline-block; background:#ff4757; color:#fff; padding:1px 6px;
+                           border-radius:10px; font-size:0.8em; animation:pulse 1.5s infinite; font-weight:bold;">LIVE</span>
+            </div>
+            <div id="wc-list" style="font-size:0.32em; overflow-y:auto; flex:1; color:#ccc;"></div>
+            <div style="margin-top:6px; font-size:0.3em; color:#666; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px;">
+              提交數：<span id="wc-total" style="color:var(--accent); font-weight:700;">0</span> |
+              獨特詞：<span id="wc-unique" style="color:var(--accent2); font-weight:700;">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右欄：文字雲畫布 -->
+        <div style="background:rgba(255,255,255,0.04); border-radius:12px; overflow:hidden;
+                    position:relative; border:1px solid rgba(255,255,255,0.07);">
+          <canvas id="wc-canvas" style="width:100%; height:100%; display:block;"></canvas>
+          <div id="wc-empty" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+                                     color:#555; font-size:0.42em; text-align:center;
+                                     pointer-events:none; line-height:2;">
+            輸入第一個關鍵字<br>文字雲就會顯示在這裡 ✨
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 目的與範圍 -->
+    <section>
+      <h2>制定目的與適用範圍</h2>
+      <div class="adv-grid-2">
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_document.png" alt="目的"></div>
+          <div class="adv-title">核心目的 (Purpose)</div>
+          <div class="adv-desc">
+            <ul>
+              <li>有效利用倉儲物理空間。</li>
+              <li>降低不必要的倉儲管理成本。</li>
+              <li>及時對不合格品進行<b>快速、合理</b>的報廢與銷毀。</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_wh.png" alt="範圍"></div>
+          <div class="adv-title">適用範圍 (Scope)</div>
+          <div class="adv-desc">
+            適用於廠內經判定<b>拒用、過期、變質、無市場需求、退回且不得再加工、或確定無用途</b>之倉庫管制物件：
+            <ul style="margin-top:5px;">
+              <li>原物料 (Raw Materials)</li>
+              <li>待充填藥液 (Bulks)</li>
+              <li>成品與最終成品 (Products)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 組織權責 -->
+    <section>
+      <h2>組織分工與職責界定</h2>
+      <div class="adv-grid-4">
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_wh.png" alt="WH Staff"></div>
+          <div class="adv-title">倉儲人員 (WH)</div>
+          <div class="adv-desc">
+            填寫報廢單、提出簽呈申請、實體移置、執行<b>庫存帳卡 (SOP-WH-01-A)</b> 扣帳，並執行廠內銷毀作業。
+          </div>
+        </div>
+
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_wh.png" alt="WH Supervisor"></div>
+          <div class="adv-title">倉儲主管</div>
+          <div class="adv-desc">
+            審核與把關各項原物料及產品之報廢、銷毀申請。
+          </div>
+        </div>
+
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_ehs.png" alt="EHS"></div>
+          <div class="adv-title">環安衛單位 (EHS)</div>
+          <div class="adv-desc">
+            評估銷毀方式、<b>指定廢棄物貯存區</b>、協調合格委外廠商清運與確認銷毀日期。
+          </div>
+        </div>
+
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_qa.png" alt="QA"></div>
+          <div class="adv-title">品質保證 (QA)</div>
+          <div class="adv-desc">
+            最終核准報廢申請、<b>現場監督廠內銷毀</b>、審查委外銷毀紀錄並做表單最終審核。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 核心定義 -->
+    <section>
+      <h2>專有名詞與核心定義</h2>
+      <div class="adv-grid-4">
+        <div class="adv-card" style="border-top-color: var(--accent);">
+          <div class="adv-title" style="color:var(--accent);">原物料 (Material)</div>
+          <div class="adv-desc" style="font-size:0.38em;">
+            泛指原料（含原料藥與賦形劑）、包裝材料，以及倉管用於製造或無菌模擬之耗材。
+          </div>
+        </div>
+
+        <div class="adv-card" style="border-top-color: var(--accent);">
+          <div class="adv-title" style="color:var(--accent);">待充填藥液 (Bulk)</div>
+          <div class="adv-desc" style="font-size:0.38em;">
+            已完成所有製造流程，可供無菌過濾及充填作業之含藥溶液。
+          </div>
+        </div>
+
+        <div class="adv-card" style="border-top-color: var(--accent);">
+          <div class="adv-title" style="color:var(--accent);">成品 vs 最終成品</div>
+          <div class="adv-desc" style="font-size:0.38em;">
+            <b>成品</b>：藥液已充填至一級包材但尚未進行二級包裝。<br>
+            <b>最終成品</b>：已完成二級包裝。
+          </div>
+        </div>
+
+        <div class="adv-card" style="border-top-color: var(--accent);">
+          <div class="adv-title" style="color:var(--accent);">報廢 vs 銷毀</div>
+          <div class="adv-desc" style="font-size:0.38em;">
+            <b>報廢</b>：行政與帳務宣告廢棄、除帳及隔離。<br>
+            <b>銷毀</b>：實體物理/化學性破壞或委外清運，確保無法還原。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. 報廢申請流程 -->
+    <section>
+      <h2>報廢申請行政流程</h2>
+      <div class="timeline">
+        <div class="timeline-item fragment">
+          <div class="ti-step">Step 1. 填寫報廢申請表 (SOP-WH-09-A)</div>
+          <div class="ti-text">倉儲人員評估待報廢品無使用價值後，填表作為待報廢清冊，並確認容器標示正確。</div>
+        </div>
+        <div class="timeline-item fragment">
+          <div class="ti-step">Step 2. 跨單位會辦</div>
+          <div class="ti-text">送交環安衛評估處置地點/指定貯存區；送交品保人員進行品質審查（意見填入 Part II 欄位）。</div>
+        </div>
+        <div class="timeline-item fragment">
+          <div class="ti-step">Step 3. 提報公司簽呈</div>
+          <div class="ti-text">檢附報廢申請表，依公司授權核決權限進行簽呈呈核，核准後始能處置。</div>
+        </div>
+        <div class="timeline-item fragment">
+          <div class="ti-step">Step 4. 實體移置與帳務除帳</div>
+          <div class="ti-text">簽呈核准後，將物品實體移入「指定廢棄物貯存區」並執行庫存卡扣帳。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. 表單編碼與範例 -->
+    <section>
+      <h2>報廢申請表編碼原則</h2>
+      <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 25px; max-width: 750px; margin: 0 auto; text-align: left; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 0.6em; font-weight: 700; color: var(--accent2); margin-bottom: 12px;">
+          編碼結構：單據代碼 (SC) + 年份 (yy) + 月份 (mm) + 流水號 (3碼)
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; justify-content: center; margin: 20px 0;">
+          <div style="background: var(--accent); color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.8em; font-weight: bold;">SC</div>
+          <div style="font-size: 0.8em; color: #fff;">+</div>
+          <div style="background: #333; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.8em; font-weight: bold;">26</div>
+          <div style="font-size: 0.8em; color: #fff;">+</div>
+          <div style="background: #333; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.8em; font-weight: bold;">09</div>
+          <div style="font-size: 0.8em; color: #fff;">+</div>
+          <div style="background: var(--accent2); color: #0d1117; padding: 10px 15px; border-radius: 6px; font-size: 0.8em; font-weight: bold;">001</div>
+        </div>
+        <ul style="font-size: 0.44em; color: #ccc; margin-left: 20px;">
+          <li><b>單據代碼</b>：<span style="color:var(--accent); font-weight:bold;">SC</span> 代表 Scrap（報廢申請）。</li>
+          <li><b>年份後兩碼</b>：<span style="color:#fff; font-weight:bold;">26</span> 代表西元 2026 年。</li>
+          <li><b>月份</b>：<span style="color:#fff; font-weight:bold;">09</span> 代表 9 月。</li>
+          <li><b>流水號</b>：<span style="color:var(--accent2); font-weight:bold;">001</span> 代表 9 月份的第一張報廢表單。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 8. 實體移置與帳務扣帳對比 (Slider VIZ) -->
+    <section>
+      <h2>實體移置與帳務除帳時機</h2>
+      <p style="font-size: 0.45em; margin-bottom: 12px; color: #ffb74d;">
+        💡 左右拉動下方滑桿，對比物品實體移置前後的帳務處理規則：
+      </p>
+      
+      <!-- 左右滑動 reveal 容器 -->
+      <div style="position:relative; height:340px; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.15);">
+        
+        <!-- Before: 未移出倉庫前 -->
+        <div id="viz-before" style="position:absolute; inset:0; background:#1e272e; padding: 25px; text-align: left; box-sizing: border-box;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="background: rgba(255,183,77,0.2); color: var(--warn); padding: 4px 10px; border-radius: 12px; font-size: 0.4em; font-weight: bold;">狀態 A：實體移置前 (未移出倉庫)</span>
+          </div>
+          <h3 style="margin-top: 15px; font-size: 0.7em; color: var(--warn);">嚴禁提前執行帳務扣帳</h3>
+          <p style="font-size: 0.46em; color: #ddd; margin-top: 8px;">
+            在簽呈核准但實體尚未移置到廢棄物貯存區之前，倉儲人員<b>不得提前執行庫存卡扣帳</b>。
+            這是為了避免發生系統除帳但實體仍在倉儲區的「帳物不符」風險。
+          </p>
+        </div>
+        
+        <!-- After: 移置完成 -->
+        <div id="viz-after" style="position:absolute; inset:0; background:#0f2a3a; padding: 25px; text-align: left; box-sizing: border-box; clip-path: inset(0 100% 0 0);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="background: rgba(79,195,247,0.2); color: var(--accent2); padding: 4px 10px; border-radius: 12px; font-size: 0.4em; font-weight: bold;">狀態 B：實體移置後 (移入貯存區)</span>
+          </div>
+          <h3 style="margin-top: 15px; font-size: 0.7em; color: var(--accent2);">立即扣帳，且不得再移回倉庫</h3>
+          <p style="font-size: 0.46em; color: #ddd; margin-top: 8px;">
+            實體移出倉庫移入指定廢棄物貯存區後，即代表該品項正式脫離可用庫存管制。
+            倉儲人員<b>應立即於庫存帳卡 (SOP-WH-01-A) 上執行除帳作業</b>。移置後物品絕對不得再送回倉庫。
+          </p>
+        </div>
+        
+        <!-- 分割線 -->
+        <div id="viz-divider" style="position:absolute; top:0; left:0; width:3px; height:100%;
+          background:linear-gradient(to bottom, transparent, var(--accent2), transparent);
+          box-shadow: 0 0 12px var(--accent2); pointer-events:none;"></div>
+      </div>
+      
+      <!-- 控制滑桿 -->
+      <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+        <span style="font-size: 0.38em; color: #888;">實體移置前</span>
+        <input id="viz-slider" type="range" min="0" max="100" value="0" style="width: 250px; cursor: pointer;">
+        <span style="font-size: 0.38em; color: #888;">移入隔離區</span>
+      </div>
+    </section>
+
+    <!-- 9. 即時測驗 (Poll) -->
+    <section id="slide-poll">
+      <h2 style="font-size:1.15em;">即時觀念測驗</h2>
+      <p style="font-size: 0.5em; color: var(--accent); margin-bottom: 20px;">
+        ❓ 請問是否可以在實體物品尚未移出倉庫前，先在帳上進行庫存扣帳？
+      </p>
+      <div id="poll-options" style="display:flex; flex-direction:column; gap:12px; max-width: 650px; margin: 0 auto;">
+        <!-- 動態生成選項 -->
+      </div>
+      <div style="font-size:0.38em; color:#666; text-align:center; margin-top:15px;">
+        目前已參與投票：<span id="poll-total" style="color:var(--accent2); font-weight:bold;">0</span> 人
+      </div>
+    </section>
+
+    <!-- 10. 銷毀作業與方式 -->
+    <section>
+      <h2>銷毀作業規範與方式</h2>
+      <div class="adv-grid-3">
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_document.png" alt="包材"></div>
+          <div class="adv-title">包材銷毀</div>
+          <div class="adv-desc">
+            標籤、彩盒等具有識別性之包材銷毀，須進行<b>撕毀、劃線或噴漆</b>至完全無法再被使用的狀態。
+          </div>
+        </div>
+
+        <div class="adv-card">
+          <div class="adv-icon"><img src="images/icon_trash.png" alt="物料"></div>
+          <div class="adv-title">固體與液體</div>
+          <div class="adv-desc">
+            <b>液體</b>：由環安衛評估廠內自行處理或委外清運。<br>
+            <b>固體</b>：可於廠內進行物理/化學破壞（如溶解於水或酸鹼液），若無法自行處理則委外處理。
+          </div>
+        </div>
+
+        <div class="adv-card" style="border-top-color: var(--success);">
+          <div class="adv-icon"><img src="images/icon_qa.png" alt="見證"></div>
+          <div class="adv-title" style="color:var(--success);">佐證與見證</div>
+          <div class="adv-desc">
+            * 執行前需對品號、批號拍照存證。<br>
+            * 廠內銷毀：需有拍照錄影，或由<b>倉儲主管、環安主管、品保人員</b>（至少一位）在場見證簽章。<br>
+            * 委外銷毀：須取得廠商<b>妥善處理證明文件</b>。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. 封底與記錄保存 -->
+    <section data-background-image="images/bg_ending.png"
+             data-background-opacity="0.4"
+             data-background-size="cover">
+      <div class="title-slide">
+        <div class="tag">SOP-WH-09 · 倉庫報廢及銷毀程序</div>
+        <h1 style="color:var(--accent2);">品質保證 · 法規合規</h1>
+        <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; max-width: 600px; margin: 20px auto; text-align: left;">
+          <div style="font-size: 0.45em; font-weight: bold; color: var(--accent); margin-bottom: 6px;">📂 紀錄保存規範</div>
+          <p style="font-size: 0.4em; color: #ccc; margin: 0; line-height: 1.5;">
+            報廢申請表 (SOP-WH-09-A) 及銷毀紀錄表 (SOP-WH-09-B) <b>正本應交予倉儲人員留存</b>。
+            必要時，倉儲人員得提供影本予財務或其他相關行政單位，作為帳務沖銷之會計憑證。
+          </p>
+        </div>
+        <p class="subtitle" style="font-size: 0.6em; color: #aaa; margin-top: 1.5em; font-style: italic;">
+          「落實法規安全，維護品質誠信」
+        </p>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  // 1. 初始化 Reveal.js
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: true,
+    progress: true,
+    controls: true,
+    slideNumber: 'c/t',
+    plugins: []
+  });
+
+  // 2. 視覺化滑動 (clip-path Slider) 邏輯
+  document.getElementById('viz-slider').addEventListener('input', function() {
+    const v = +this.value;
+    document.getElementById('viz-after').style.clipPath = `inset(0 ${100 - v}% 0 0)`;
+    document.getElementById('viz-divider').style.left = v + '%';
+  });
+</script>
+
+<!-- Firebase 互動組件整合 Script -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+  import {
+    getFirestore, collection, addDoc, onSnapshot,
+    serverTimestamp, query, orderBy, doc, setDoc
+  } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+
+  // 共用 Firebase 測試專案設定
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYQhNavPSce17XtvDC5xnXyl9iUhW9KjA",
+    authDomain: "teacherstudy-109ef.firebaseapp.com",
+    projectId: "teacherstudy-109ef",
+    storageBucket: "teacherstudy-109ef.firebasestorage.app",
+    messagingSenderId: "196599230156",
+    appId: "1:196599230156:web:cfe55d364df3ae1b9d5c69"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  const fdb = getFirestore(app);
+
+  // Firestore 集合設定 (採用簡報 slug 'sop_wh_09')
+  const wordsRef = collection(fdb, 'sop_wh_09_wordcloud');
+  const pollRef = doc(fdb, 'sop_wh_09_poll', 'results');
+
+  // ==================== [文字雲組件] ====================
+  const COLORS = ['#4fc3f7', '#e8643a', '#ffb74d', '#81c784', '#ce93d8', '#80deea', '#f48fb1'];
+  let wcData = [];
+
+  window.wcSubmit = async function() {
+    const input = document.getElementById('wc-input');
+    const word = input.value.trim();
+    if (!word) return;
+    const btn = document.getElementById('wc-btn');
+    btn.disabled = true;
+    try {
+      await addDoc(wordsRef, { word, created_at: serverTimestamp() });
+      input.value = '';
+    } catch(e) { console.error(e); }
+    finally { btn.disabled = false; }
+  };
+
+  document.getElementById('wc-input')?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') window.wcSubmit();
+  });
+  document.getElementById('wc-btn')?.addEventListener('click', window.wcSubmit);
+
+  onSnapshot(query(wordsRef, orderBy('created_at', 'asc')), snap => {
+    const words = [];
+    snap.forEach(doc => words.push(doc.data().word));
+    const counts = {};
+    words.forEach(w => counts[w] = (counts[w] || 0) + 1);
+    wcData = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    document.getElementById('wc-total').textContent = words.length;
+    document.getElementById('wc-unique').textContent = wcData.length;
+
+    const listEl = document.getElementById('wc-list');
+    listEl.innerHTML = wcData.slice(0, 10).map(([w, c]) =>
+      `<div style="display:flex;justify-content:space-between;padding:4px 0;
+                   border-bottom:1px solid rgba(255,255,255,0.06);">
+        <span>${w}</span><span style="color:var(--accent);font-weight:700;">${c}</span>
+      </div>`
+    ).join('') || '<div style="color:#555;padding:8px 0;">尚無數據</div>';
+
+    const empty = document.getElementById('wc-empty');
+    if (empty) empty.style.display = wcData.length > 0 ? 'none' : '';
+    drawWordCloud();
+  });
+
+  function drawWordCloud() {
+    const canvas = document.getElementById('wc-canvas');
+    if (!canvas || typeof WordCloud === 'undefined') return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) return;
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    if (wcData.length === 0) return;
+    const maxCount = wcData[0][1];
+    WordCloud(canvas, {
+      list: wcData.map(([w, c]) => [w, Math.max(18, Math.round((c / maxCount) * 60))]),
+      gridSize: 6,
+      weightFactor: 1,
+      fontFamily: '"Microsoft JhengHei", "Noto Sans TC", sans-serif',
+      color: () => COLORS[Math.floor(Math.random() * COLORS.length)],
+      backgroundColor: 'transparent',
+      rotateRatio: 0.3,
+      shuffle: true,
+    });
+  }
+
+  // ==================== [單選投票組件] ====================
+  const OPTIONS = [
+    { id: 'a', label: '可以，為了加快行政處理速度' },
+    { id: 'b', label: '絕對不可以，必須在實體移置後始得扣帳，避免帳物不符' }
+  ];
+
+  const userId = 'user_' + Math.random().toString(36).slice(2, 9);
+  let myVote = null;
+
+  // 渲染選項按鈕
+  const container = document.getElementById('poll-options');
+  OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.id = `poll-btn-${opt.id}`;
+    btn.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="flex:0 0 20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);
+                     display:flex;align-items:center;justify-content:center;font-size:12px;"
+              id="poll-check-${opt.id}"></span>
+        <span style="flex:1;text-align:left;">${opt.label}</span>
+        <span id="poll-bar-wrap-${opt.id}"
+              style="flex:0 0 100px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+          <div id="poll-bar-${opt.id}" style="height:100%;width:0;background:var(--accent2);border-radius:4px;transition:width 0.4s;"></div>
+        </span>
+        <span id="poll-pct-${opt.id}" style="flex:0 0 36px;text-align:right;font-size:0.75em;color:#888;">0%</span>
+      </div>
+    `;
+    btn.style.cssText = `width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;
+      font-size:0.44em;cursor:pointer;font-family:inherit;text-align:left;`;
+    btn.onclick = () => vote(opt.id);
+    container.appendChild(btn);
+  });
+
+  async function vote(optId) {
+    myVote = optId;
+    const data = {};
+    data[`votes.${userId}`] = optId;
+    data.updated_at = serverTimestamp();
+    await setDoc(pollRef, data, { merge: true });
+  }
+
+  onSnapshot(pollRef, snap => {
+    const data = snap.data() || {};
+    const votes = data.votes || {};
+    const counts = {};
+    OPTIONS.forEach(o => counts[o.id] = 0);
+    Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    document.getElementById('poll-total').textContent = total;
+    OPTIONS.forEach(opt => {
+      const pct = total > 0 ? Math.round((counts[opt.id] / total) * 100) : 0;
+      document.getElementById(`poll-bar-${opt.id}`).style.width = pct + '%';
+      document.getElementById(`poll-pct-${opt.id}`).textContent = pct + '%';
+      const check = document.getElementById(`poll-check-${opt.id}`);
+      if (myVote === opt.id) {
+        check.textContent = '✓';
+        check.style.background = 'var(--accent2)';
+        check.style.borderColor = 'var(--accent2)';
+      }
+    });
+  });
+
+  // 切換投影片重新繪製畫布，以確保文字雲繪製尺寸正常
+  Reveal.on('slidechanged', e => {
+    if (e.currentSlide?.id === 'slide-wordcloud') {
+      setTimeout(drawWordCloud, 200);
+    }
+  });
+</script>
+</body>
+</html>
